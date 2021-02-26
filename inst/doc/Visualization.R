@@ -6,11 +6,13 @@ knitr::opts_chunk$set(fig.width = 6)
 ## ----simulate-----------------------------------------------------------------
 select_matrix <- matrix(nrow = 1, ncol = 5)
 select_matrix[1, ] <- c(0.5, 1, 1 + 0.05, 1 + 0.1, 0)
-population <- simulate_admixture(pop_size = 1000,
-                                 number_of_founders = 2,
+population <- simulate_admixture(
+                      module = ancestry_module(markers = 
+                                                c(0.5, 
+                                                 seq(0, 1, length.out = 100))),
+                                pop_size = 1000,
                                  total_runtime = 200,
-                                 select_matrix = select_matrix,
-                                 markers = c(0.5, seq(0, 1, length.out = 100)))
+                                 select_matrix = select_matrix)
 
 ## ----plot over time-----------------------------------------------------------
 plot_over_time(population$frequencies, focal_location = 0.500)
@@ -31,5 +33,6 @@ plot_joyplot_frequencies(population$frequencies,
 ## ----plot chromosome----------------------------------------------------------
 plot(population$population[[1]])
 
-plot_chromosome(population$population[[1]]$chromosome1, xmin = 0.45, xmax = 0.55)
+plot_chromosome(population$population[[1]]$chromosome1,
+                xmin = 0.45, xmax = 0.55)
 

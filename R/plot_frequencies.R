@@ -10,10 +10,10 @@
 #' @param progress_bar Displays a progress_bar if TRUE. Default value is FALSE
 #' @return a ggplot2 object
 #' @examples
-#' pop <- simulate_admixture(pop_size = 1000,
-#'                           number_of_founders = 4,
-#'                           total_runtime = 11,
-#'                           morgan = 1)
+#' pop <- simulate_admixture(
+#'              module = ancestry_module(number_of_founders = 4),
+#'              pop_size = 1000,
+#'              total_runtime = 11)
 #' require(ggplot2)
 #' plot_frequencies(result = pop)
 #' @export
@@ -31,8 +31,16 @@ plot_frequencies <- function(result,
                                      colour = as.factor(.data[["ancestor"]]))) +
     ggplot2::geom_step()
 
+  if (max(to_plot$location) < 10) {
+    p1 <- p1 +
+      ggplot2::xlab("Location (Morgan)")
+  } else {
+    p1 <- p1 +
+      ggplot2::xlab("Location (bp)")
+  }
+
+
   p1 <- p1 +
-    ggplot2::xlab("Location (Morgan)") +
     ggplot2::ylab("Frequency") +
     ggplot2::labs(col = "Ancestor")
 

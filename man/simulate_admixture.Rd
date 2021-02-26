@@ -5,40 +5,30 @@
 \title{Individual based simulation of the breakdown of contiguous ancestry blocks.}
 \usage{
 simulate_admixture(
-  input_population = NA,
-  pop_size = NA,
-  number_of_founders = 2,
-  initial_frequencies = NA,
+  module = ancestry_module(),
+  pop_size = 100,
   total_runtime = 100,
-  morgan = 1,
-  seed = NULL,
+  migration = migration_settings(),
   select_matrix = NA,
-  markers = NA,
+  multiplicative_selection = TRUE,
   verbose = FALSE,
-  track_junctions = FALSE,
-  multiplicative_selection = TRUE
+  num_threads = 1
 )
 }
 \arguments{
-\item{input_population}{Potential earlier simulated population used as
-starting point for the simulation. If not provided by the user, the
-simulation starts from scratch.}
+\item{module}{Chosen module to simulate, either created with
+\code{module_ancestry} or
+\code{module_sequence}.}
 
-\item{pop_size}{Vector containing the number of individuals in both
-populations.}
-
-\item{number_of_founders}{Number of unique ancestors}
-
-\item{initial_frequencies}{A vector describing the initial frequency of each
-ancestor. By default, equal frequencies are assumed. If a vector not summing
-to 1 is provided, the vector is normalized.}
+\item{pop_size}{The number of individuals in the population. If the number is
+larger than the number of individuals in the input population (if provided),
+additional individuals are sampled randomly from the input population to
+reach the intended size.}
 
 \item{total_runtime}{Number of generations}
 
-\item{morgan}{Length of the chromosome in Morgan (e.g. the number of
-crossovers during meiosis)}
-
-\item{seed}{Seed of the pseudo-random number generator}
+\item{migration}{settings associated with migration, should be created with
+\code{\link{migration_settings}}}
 
 \item{select_matrix}{Selection matrix indicating the markers which are under
 selection. If not provided by the user, the simulation proceeds neutrally. If
@@ -48,18 +38,14 @@ provided, each row in the matrix should contain five entries:
 \code{fitness of homozygote mutant (AA)} \code{Ancestral type that
 represents the mutant allele A}}
 
-\item{markers}{A vector of locations of markers (relative locations in
-[0, 1]). If a vector is provided, ancestry at these marker positions is
-tracked for every generation.}
-
-\item{verbose}{Verbose output if TRUE. Default value is FALSE}
-
-\item{track_junctions}{Track the average number of junctions over time if
-TRUE}
-
 \item{multiplicative_selection}{Default: TRUE. If TRUE, fitness is calculated
 for multiple markers by multiplying fitness values for each marker. If FALSE,
 fitness is calculated by adding fitness values for each marker.}
+
+\item{verbose}{Verbose output if TRUE. Default value is FALSE}
+
+\item{num_threads}{number of threads. Default is 1. Set to -1 to use all
+available threads}
 }
 \value{
 A list with: \code{population} a population object, and three tibbles
@@ -77,8 +63,22 @@ ancestry blocks, with or without selection. Simulations can be started from
 scratch, or from a predefined input population.
 }
 \examples{
-wildpop =  simulate_admixture(pop_size = 1000,
-                              number_of_founders = 2,
-                              total_runtime = 10,
-                              morgan = 1)
+# local ancestry simulation
+two_populations <- simulate_admixture(
+                         module = ancestry_module(number_of_founders = 3,
+                                                  morgan = 0.8),
+                         migration = migration_settings(
+                                         migration_rate = 0.01,
+                                         population_size = c(100, 100)),
+                         total_runtime = 10)
+ # sequence simulation
+ data(dgrp2.3R.5k.data)
+
+sequence_population <-
+      simulate_admixture(
+                  module = sequence_module(molecular_data = dgrp2.3R.5k.data,
+                           recombination_rate = 0.2,
+                           mutation_rate = 1e-5),
+                  pop_size = 1000,
+                  total_runtime = 10)
 }

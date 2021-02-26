@@ -1,8 +1,8 @@
 #' Plot the change in frequency between the start and end of a simulation
 #' @description This function plots the change in frequency of one or
 #' multiple ancestors after performing a simulation.
-#' @param results An object which is the result of \code{select_population} or
-#' \code{create_population_selection}, being a list with four properties:
+#' @param results An object which is the result of \code{simulate_admixture}
+#'  being a list with four properties:
 #' \code{population}, \code{frequencies}, \code{initial_frequencies} and
 #' \code{final frequencies}
 #' @param picked_ancestor Default is "ALL", where different colors indicate
@@ -19,12 +19,13 @@
 #'
 #' markers <- seq(from = 0.2, to = 0.3, length.out = 100)
 #'
-#' selected_pop <- simulate_admixture(pop_size = 1000,
-#'                                    number_of_founders = 10,
-#'                                    total_runtime = 11,
-#'                                    morgan = 1,
-#'                                    select_matrix = select_matrix,
-#'                                    markers = markers)
+#' selected_pop <- simulate_admixture(
+#'                     module = ancestry_module(number_of_founders = 10,
+#'                                              morgan = 1,
+#'                                              markers = markers),
+#'                     pop_size = 1000,
+#'                     total_runtime = 11,
+#'                     select_matrix = select_matrix)
 #' require(ggplot2)
 #' plot_difference_frequencies(results = selected_pop,
 #'                             picked_ancestor = "ALL")
@@ -61,7 +62,7 @@ plot_difference_frequencies <- function(results,
     p1 <- ggplot2::ggplot(to_plot,
                           ggplot2::aes(x = .data[["location"]],
                                        y = .data[["diff_frequency"]],
-                                       colour = as.factor(.data[["ancestor"]]))) +
+                                    colour = as.factor(.data[["ancestor"]]))) +
       ggplot2::geom_step()
   } else {
 
@@ -71,12 +72,19 @@ plot_difference_frequencies <- function(results,
     p1 <- ggplot2::ggplot(to_plot,
                           ggplot2::aes(x = .data[["location"]],
                                        y = .data[["diff_frequency"]],
-                                       colour = as.factor(.data[["ancestor"]]))) +
+                                    colour = as.factor(.data[["ancestor"]]))) +
       ggplot2::geom_step()
   }
 
+  if (max(to_plot$location) < 10) {
+    p1 <- p1 +
+      ggplot2::xlab("Location (Morgan)")
+  } else {
+    p1 <- p1 +
+      ggplot2::xlab("Location (bp)")
+  }
+
   p1 <- p1 +
-    ggplot2::xlab("Location (Morgan)") +
     ggplot2::ylab("Change in Frequency") +
     ggplot2::labs(col = "Ancestor")
 

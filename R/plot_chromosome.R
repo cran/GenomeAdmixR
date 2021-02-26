@@ -8,16 +8,17 @@
 #' @param xmax maximum value of the range, default = 1.
 #' @return No return value
 #' @examples
-#' wildpop <- simulate_admixture(pop_size = 100,
-#'                               number_of_founders = 10,
-#'                               total_runtime = 5,
-#'                               morgan = 1)
+#' wildpop =  simulate_admixture(
+#'    module = ancestry_module(number_of_founders = 10, morgan = 1),
+#'    pop_size = 1000,
+#'    total_runtime = 10)
 #'
-#' isofemale <- create_iso_female(source_pop = wildpop,
-#'                                n = 1,
-#'                                inbreeding_pop_size = 100,
-#'                                run_time = 10,
-#'                                morgan = 1)
+#' isofemale <- create_iso_female(
+#'                  module = ancestry_module(input_population = wildpop,
+#'                                           morgan = 1),
+#'                  n = 1,
+#'                  inbreeding_pop_size = 100,
+#'                  run_time = 10)
 #'
 #' plot_chromosome(chrom = isofemale[[1]]$chromosome1)
 #' # and a detail of the chromosome:
@@ -29,7 +30,11 @@ plot_chromosome <- function(chrom, xmin = 0, xmax = 1) {
   alleles <- unique(chrom[, 2])
   num_colors <- 1 + max(alleles)
   if (num_colors > 20) num_colors <- 20
-  color_palette <- grDevices::rainbow(num_colors)
+  color_palette <- grDevices::rainbow(num_colors, alpha = 1)
+
+  if (max(chrom[, 1]) > 1 && xmax == 1) {
+    xmax <- max(chrom[, 1])
+  }
 
   graphics::plot(NA,
        xlim = c(xmin, xmax),

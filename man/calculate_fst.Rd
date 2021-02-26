@@ -7,7 +7,7 @@
 calculate_fst(
   pop1,
   pop2,
-  sampled_individuals,
+  sampled_individuals = 10,
   number_of_markers = 100,
   random_markers = FALSE
 )
@@ -42,9 +42,10 @@ calculate the FST. The function \code{wc} computes the Weir and Cockerham
 F statistic.
 }
 \examples{
-two_populations <- simulate_admixture_migration(pop_size = c(100, 100),
-                                                morgan = 1,
-                                                migration_rate = 0.01)
+two_populations <- simulate_admixture(
+                        module = ancestry_module(),
+                       migration = migration_settings(migration_rate = 0.01,
+                                           population_size = c(100, 100)))
 
 FST <- calculate_fst(pop1 = two_populations$population_1,
                      pop2 = two_populations$population_2,

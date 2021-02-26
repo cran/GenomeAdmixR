@@ -11,8 +11,8 @@ plot_difference_frequencies(
 )
 }
 \arguments{
-\item{results}{An object which is the result of \code{select_population} or
-\code{create_population_selection}, being a list with four properties:
+\item{results}{An object which is the result of \code{simulate_admixture}
+ being a list with four properties:
 \code{population}, \code{frequencies}, \code{initial_frequencies} and
 \code{final frequencies}}
 
@@ -38,12 +38,13 @@ select_matrix[1, ] <- c(0.25, 1.0, 1 + 0.5 * s, 1 + s, 0)
 
 markers <- seq(from = 0.2, to = 0.3, length.out = 100)
 
-selected_pop <- simulate_admixture(pop_size = 1000,
-                                   number_of_founders = 10,
-                                   total_runtime = 11,
-                                   morgan = 1,
-                                   select_matrix = select_matrix,
-                                   markers = markers)
+selected_pop <- simulate_admixture(
+                    module = ancestry_module(number_of_founders = 10,
+                                             morgan = 1,
+                                             markers = markers),
+                    pop_size = 1000,
+                    total_runtime = 11,
+                    select_matrix = select_matrix)
 require(ggplot2)
 plot_difference_frequencies(results = selected_pop,
                             picked_ancestor = "ALL")

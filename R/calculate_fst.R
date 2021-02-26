@@ -17,9 +17,10 @@
 #' F statistic.
 #' @return FST value
 #' @examples
-#' two_populations <- simulate_admixture_migration(pop_size = c(100, 100),
-#'                                                 morgan = 1,
-#'                                                 migration_rate = 0.01)
+#' two_populations <- simulate_admixture(
+#'                         module = ancestry_module(),
+#'                        migration = migration_settings(migration_rate = 0.01,
+#'                                            population_size = c(100, 100)))
 #'
 #' FST <- calculate_fst(pop1 = two_populations$population_1,
 #'                      pop2 = two_populations$population_2,
@@ -29,7 +30,7 @@
 #' @export
 calculate_fst <- function(pop1,
                           pop2,
-                          sampled_individuals,
+                          sampled_individuals = 10,
                           number_of_markers = 100,
                           random_markers = FALSE) {
 
@@ -38,6 +39,10 @@ calculate_fst <- function(pop1,
   pop2 <- check_input_pop(pop2)
 
   number_of_markers <- round(number_of_markers)
+
+  if (sampled_individuals > max(length(pop1), length(pop2))) {
+    sampled_individuals <- max(length(pop1), length(pop2))
+  }
 
   all_loci <- create_loci_matrix(
                 pop1[sample(seq_along(pop1), sampled_individuals)],
@@ -62,9 +67,15 @@ create_loci_matrix <- function(pop1,
   all_loci[, 1] <- c(rep(1, length(pop1)), rep(2, length(pop1)))
   colnames(all_loci) <- c("population", 1:number_of_markers)
 
-  markers <- seq(1e-9, 1 - (1e-9), length.out = number_of_markers)
+  marker_range <- get_marker_range(pop1, pop2)
+
+
+  markers <- seq(marker_range[1], marker_range[2],
+                 length.out = number_of_markers)
   if (random_markers) {
-    markers <- create_random_markers(number_of_markers)
+    markers <- create_random_markers(number_of_markers,
+                                     marker_range[1],
+                                     marker_range[2])
   }
 
   for (x in seq_along(markers)) {
@@ -73,6 +84,9 @@ create_loci_matrix <- function(pop1,
       allele_1 <- 10 + findtype(pop1[[i]]$chromosome1, focal_marker)
       allele_2 <- 10 + findtype(pop1[[i]]$chromosome2, focal_marker)
       final_allele <- paste0(allele_1, allele_2)
+      if (is.na(allele_1) && is.na(allele_2)) {
+        final_allele <- NA
+      }
       all_loci[i, x + 1] <- as.numeric(final_allele)
     }
 
@@ -80,6 +94,9 @@ create_loci_matrix <- function(pop1,
       allele_1 <- 10 + findtype(pop2[[i]]$chromosome1, focal_marker)
       allele_2 <- 10 + findtype(pop2[[i]]$chromosome2, focal_marker)
       final_allele <- paste0(allele_1, allele_2)
+      if (is.na(allele_1) && is.na(allele_2)) {
+        final_allele <- NA
+      }
       all_loci[length(pop1) + i, x + 1] <- as.numeric(final_allele)
     }
   }

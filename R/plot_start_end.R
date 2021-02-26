@@ -15,11 +15,12 @@
 #' @examples
 #' markers <- seq(from = 0.2, to = 0.3, length.out = 100)
 #'
-#' pop <- simulate_admixture(pop_size = 1000,
-#'                           number_of_founders = 3,
-#'                           total_runtime = 11,
-#'                           morgan = 1,
-#'                           markers = markers)
+#' pop <- simulate_admixture(
+#'             module = ancestry_module(number_of_founders = 3,
+#'                                      morgan = 1,
+#'                                      markers = markers),
+#'            pop_size = 1000,
+#'            total_runtime = 11)
 #' require(ggplot2)
 #' plot_start_end(pop,
 #'                picked_ancestor = "ALL")
@@ -50,11 +51,11 @@ plot_start_end <- function(results,
     to_plot <- to_plot_m
 
     p1 <- ggplot2::ggplot(to_plot,
-                        ggplot2::aes(x = .data[["location"]],
-                                     y = .data[["frequency"]],
-                                     colour = as.factor(.data[["ancestor"]]),
-                                     group = interaction(.data[["ancestor"]],
-                                                         .data[["timepoint"]]))) +
+                      ggplot2::aes(x = .data[["location"]],
+                                   y = .data[["frequency"]],
+                                   colour = as.factor(.data[["ancestor"]]),
+                                   group = interaction(.data[["ancestor"]],
+                                                       .data[["timepoint"]]))) +
       ggplot2::geom_step(ggplot2::aes(lty = .data[["timepoint"]]))
   } else {
 
@@ -62,16 +63,23 @@ plot_start_end <- function(results,
                       to_plot_m$ancestor %in% picked_ancestor)
 
     p1 <- ggplot2::ggplot(to_plot,
-                          ggplot2::aes(x = .data[["location"]],
-                                     y =  .data[["frequency"]],
-                                     colour = as.factor(.data[["ancestor"]]),
-                                     group = interaction(.data[["ancestor"]],
-                                                         .data[["timepoint"]]))) +
+                        ggplot2::aes(x = .data[["location"]],
+                                   y =  .data[["frequency"]],
+                                   colour = as.factor(.data[["ancestor"]]),
+                                   group = interaction(.data[["ancestor"]],
+                                                       .data[["timepoint"]]))) +
       ggplot2::geom_step(ggplot2::aes(lty = .data[["timepoint"]]))
   }
 
+  if (max(to_plot$location) < 10) {
+    p1 <- p1 +
+      ggplot2::xlab("Location (Morgan)")
+  } else {
+    p1 <- p1 +
+      ggplot2::xlab("Location (bp)")
+  }
+
   p1 <- p1 +
-    ggplot2::xlab("Location (Morgan)") +
     ggplot2::ylab("Frequency") +
     ggplot2::labs(col = "Ancestor",
                   lty = "Time Point")

@@ -4,8 +4,6 @@ context("allele_frequencies")
 test_that("calculate_allele_frequencies", {
   testthat::skip_on_os("solaris")
   message("testing allele frequencies")
-  testthat::skip_on_os("solaris")
- # skip("test this")
   pop_size <- 100
   number_of_founders <- 2
   run_time <- 5
@@ -14,10 +12,11 @@ test_that("calculate_allele_frequencies", {
 
   found <- c()
   for (r in 1:30) {
-    vx <- simulate_admixture(pop_size = pop_size,
-                             number_of_founders = number_of_founders,
-                             total_runtime = run_time,
-                             morgan = morgan)
+    vx <- simulate_admixture(module = ancestry_module(number_of_founders =
+                                                        number_of_founders,
+                                                      morgan = morgan),
+                             pop_size = pop_size,
+                             total_runtime = run_time)
 
     testthat::expect_true(verify_population(vx))
 
@@ -38,10 +37,10 @@ test_that("calculate_allele_frequencies", {
 
   found <- c()
   for (r in 1:30) {
-    vx <- simulate_admixture(pop_size = pop_size,
-                             number_of_founders = 4,
-                             total_runtime = run_time,
-                             morgan = morgan)
+    vx <- simulate_admixture(module = ancestry_module(number_of_founders = 4,
+                                                      morgan = morgan),
+                             pop_size = pop_size,
+                             total_runtime = run_time)
 
     testthat::expect_true(verify_population(vx))
 
@@ -60,30 +59,28 @@ test_that("calculate_allele_frequencies", {
 
 
   number_of_founders <- 20
-  sourcepop <- simulate_admixture(pop_size = 10000,
-                                  number_of_founders = number_of_founders,
-                                  total_runtime = 1,
-                                  morgan = morgan)
+  sourcepop <- simulate_admixture(module = ancestry_module(number_of_founders =
+                                                             number_of_founders),
+                                  pop_size = 1000,
+                                  total_runtime = 100)
 
   testthat::expect_true(verify_population(sourcepop))
 
   freq_output <- calculate_allele_frequencies(sourcepop$population)
 
-  b <- freq_output %>%
-    dplyr::group_by(as.factor(ancestor)) %>%
-    dplyr::summarise("mean_freq" = mean(frequency))
+  b <- subset(freq_output, freq_output$location == 0)
 
-  testthat::expect_equal(mean(b$mean_freq),
+  testthat::expect_equal(mean(b$frequency),
                          1 / number_of_founders,
                          tolerance = 1 / number_of_founders)
-  testthat::expect_equal(sum(b$mean_freq), 1,
+  testthat::expect_equal(sum(b$frequency), 1,
                          tolerance = 1 / number_of_founders)
 
   number_of_founders <- 5
-  sourcepop <- simulate_admixture(pop_size = 1000,
-                                  number_of_founders = number_of_founders,
-                                  total_runtime = 100,
-                                  morgan = 1)
+  sourcepop <- simulate_admixture(module = ancestry_module(number_of_founders =
+                                                             number_of_founders),
+                                  pop_size = 1000,
+                                  total_runtime = 100)
 
   testthat::expect_true(verify_population(sourcepop))
 
@@ -93,22 +90,18 @@ test_that("calculate_allele_frequencies", {
   testthat::expect_equal(length(unique(freq_output$ancestor)),
                          number_of_founders)
 
-  b <- freq_output %>%
-    dplyr::group_by(as.factor(ancestor)) %>%
-    dplyr::summarise("mean_freq" = mean(frequency))
+  b <- subset(freq_output, freq_output$location == 0)
 
-  testthat::expect_equal(sum(b$mean_freq), 1, tolerance = 0.05)
-  testthat::expect_equal(mean(b$mean_freq),
+  testthat::expect_equal(sum(b$frequency), 1, tolerance = 0.1)
+  testthat::expect_equal(mean(b$frequency),
                          1 / number_of_founders,
-                         tolerance = 0.01)
+                         tolerance = 0.1)
 
   number_founders <- 20
-  sourcepop <- simulate_admixture(pop_size = 1000,
-                                  number_of_founders = number_of_founders,
-                                  total_runtime = 1,
-                                  morgan = 1)
-
-
+  sourcepop <- simulate_admixture(module = ancestry_module(number_of_founders =
+                                                             number_of_founders),
+                                  pop_size = 1000,
+                                  total_runtime = 1)
 
   testthat::expect_true(verify_population(sourcepop))
 })

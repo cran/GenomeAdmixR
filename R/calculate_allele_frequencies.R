@@ -10,10 +10,11 @@
 #' @return A tibble containing the allele frequencies
 #' @examples
 #' number_founders = 20
-#' wildpop =  simulate_admixture(pop_size = 1000,
-#'                               number_of_founders = number_founders,
-#'                               total_runtime = 10,
-#'                               morgan = 1)
+#' wildpop =  simulate_admixture(
+#'    module = ancestry_module(number_of_founders = 20, morgan = 1),
+#'    pop_size = 1000,
+#'    total_runtime = 10,
+#'    num_threads = 1)
 #'
 #' freq_output <- calculate_allele_frequencies(wildpop,
 #'                                             progress_bar = TRUE)
@@ -26,7 +27,7 @@
 calculate_allele_frequencies <- function(source_pop,
                                          locations = seq(0, 1,
                                                          length.out = 100),
-                                         progress_bar = TRUE) {
+                                         progress_bar = FALSE) {
 
   source_pop <- check_input_pop(source_pop)
 
@@ -39,6 +40,15 @@ calculate_allele_frequencies <- function(source_pop,
   output <- frequency_table
   colnames(output) <- c("time", "location", "ancestor", "frequency")
   output <- tibble::as_tibble(output)
+
+  using_sequencing_data <- check_for_bases(source_pop)
+  if (using_sequencing_data) {
+    output$ancestor[output$ancestor == 0] <- 0
+    output$ancestor[output$ancestor == 1] <- "a"
+    output$ancestor[output$ancestor == 2] <- "c"
+    output$ancestor[output$ancestor == 3] <- "t"
+    output$ancestor[output$ancestor == 4] <- "g"
+  }
 
   return(output)
 }

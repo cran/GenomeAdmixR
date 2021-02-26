@@ -20,7 +20,8 @@
 #' @param total_runtime  Number of generations
 #' @param morgan Length of the chromosome in Morgan (e.g. the number of
 #' crossovers during meiosis)
-#' @param seed Seed of the pseudo-random number generator
+#' @param num_threads number of threads. Default is 1. Set to -1 to use all
+#' available threads
 #' @param select_matrix Selection matrix indicating the markers which are under
 #' selection. If not provided by the user, the simulation proceeds neutrally.
 #' If provided, each row in the matrix should contain five entries:
@@ -64,19 +65,15 @@
 #' in which it was recorded (1 or 2). If a critical fst value was used to
 #' terminate the simulation, and object \code{FST} with the final FST estimate
 #' is returned as well.
-#' @examples
-#' two_populations <- simulate_admixture_migration(pop_size = c(100, 100),
-#'                                                 morgan = 1,
-#'                                                 migration_rate = 0.01)
 #' @export
-simulate_admixture_migration <- function(input_population_1 = NA,
-                                         input_population_2 = NA,
+simulate_ancestry_migration <- function(input_population_1 = NA,
+                                        input_population_2 = NA,
                                          pop_size = c(100, 100),
                                          initial_frequencies = list(c(1.0, 0),
                                                                     c(0, 1.0)),
                                          total_runtime = 100,
                                          morgan = 1,
-                                         seed = NULL,
+                                         num_threads = 1,
                                          select_matrix = NA,
                                          markers = NA,
                                          verbose = FALSE,
@@ -91,13 +88,14 @@ simulate_admixture_migration <- function(input_population_1 = NA,
                                          random_markers = TRUE) {
 
   if (stop_at_critical_fst) {
-    return(simulate_admixture_until(input_population_1 = input_population_1,
+    message("stopping when FST is: ", critical_fst)
+    return(simulate_ancestry_until(input_population_1 = input_population_1,
                                     input_population_2 = input_population_2,
                                     pop_size = pop_size,
                                     initial_frequencies = initial_frequencies,
                                     total_runtime = total_runtime,
                                     morgan = morgan,
-                                    seed = seed,
+                                    num_threads = num_threads,
                                     select_matrix = select_matrix,
                                     markers = markers,
                                     verbose = verbose,
@@ -124,7 +122,9 @@ simulate_admixture_migration <- function(input_population_1 = NA,
 
   initial_frequencies <- check_initial_frequencies(initial_frequencies)
 
-  select_matrix <-     check_select_matrix(select_matrix)
+  select_matrix <-     check_select_matrix(select_matrix,
+                                           markers,
+                                           use_data = FALSE)
 
   if (length(pop_size) == 1) {
     pop_size <- c(pop_size, pop_size)
@@ -151,13 +151,8 @@ simulate_admixture_migration <- function(input_population_1 = NA,
     }
   }
 
-  if (is.null(seed)) {
-    seed <- round(as.numeric(Sys.time()))
-  }
-
   input_population_1 <- population_to_vector(input_population_1)
   input_population_2 <- population_to_vector(input_population_2)
-
 
   selected_pop <- simulate_migration_cpp(input_population_1,
                                          input_population_2,
@@ -172,7 +167,7 @@ simulate_admixture_migration <- function(input_population_1 = NA,
                                          track_junctions,
                                          multiplicative_selection,
                                          migration_rate,
-                                         seed)
+                                         num_threads)
 
   selected_popstruct_1 <- create_pop_class(selected_pop$population_1)
   selected_popstruct_2 <- create_pop_class(selected_pop$population_2)
@@ -199,5 +194,7 @@ simulate_admixture_migration <- function(input_population_1 = NA,
                                          final_freq_tibble,
                                          track_frequency,
                                          track_junctions)
+
+  class(output) <- "genomadmixr_simulation"
   return(output)
 }

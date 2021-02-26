@@ -3,6 +3,7 @@
 # #' @return corrected input population, or error if not supplied
 #' @rawNamespace useDynLib(GenomeAdmixR, .registration = TRUE)
 #' @rawNamespace import(Rcpp)
+#' @rawNamespace importFrom(RcppParallel, RcppParallelLibs)
 #' @keywords internal
 check_input_pop <- function(pop) {
 
@@ -81,7 +82,9 @@ check_initial_frequencies <- function(initial_frequencies) {
 }
 
 #' @keywords internal
-check_select_matrix <- function(select_matrix) {
+check_select_matrix <- function(select_matrix,
+                                markers,
+                                use_data = FALSE) {
   if (is.matrix(select_matrix)) {
     message(
       "Found a selection matrix, performing simulation including selection")
@@ -96,6 +99,26 @@ check_select_matrix <- function(select_matrix) {
   } else {
     if (is.na(select_matrix)) {
       select_matrix <- matrix(-1, nrow = 2, ncol = 2)
+    }
+  }
+
+  if (dim(select_matrix)[2] == 5 && use_data == TRUE) {
+    select_matrix[, 5] <- convert_dna_to_numeric(select_matrix[, 5])
+
+    # this is super ugly code, but at least it works.
+    other_matrix <- matrix(NA, nrow = length(select_matrix[, 1]),
+                           ncol = 5)
+    for (i in seq_along(select_matrix[, 1])) {
+      for (j in 1:5) {
+        other_matrix[i, j] <- as.numeric(select_matrix[i, j])
+      }
+    }
+    select_matrix <- other_matrix
+
+    sites_under_selection <- select_matrix[, 1]
+
+    if (!(sites_under_selection %in% markers)) {
+      stop("location of sites under selection have to exist in original data")
     }
   }
   return(select_matrix)
@@ -208,15 +231,17 @@ generate_output_list_one_pop <- function(selected_popstruct,
 
 #' @keywords internal
 population_to_vector <- function(source_pop) {
-  if (is.vector(source_pop)) return(source_pop)
-  pop_for_cpp <- c()
-  for (i in seq_along(source_pop)) {
-    x <- source_pop[[i]]$chromosome1
-    chrom1 <- as.vector(t(x))
-    x <- source_pop[[i]]$chromosome2
-    chrom2 <- as.vector(t(x))
-    pop_for_cpp <- c(pop_for_cpp, chrom1, chrom2)
+
+  get_chroms <- function(indiv) {
+    a <- as.vector(t(indiv$chromosome1))
+    b <- as.vector(t(indiv$chromosome2))
+    return(c(a, b))
   }
+
+  if (is.vector(source_pop)) return(source_pop)
+  chroms <- lapply(source_pop, get_chroms)
+  pop_for_cpp <- unlist(chroms)
+
   return(pop_for_cpp)
 }
 
@@ -246,10 +271,13 @@ increase_ancestor <- function(population, increment = 20) {
 }
 
 #' @keywords internal
-create_random_markers <- function(number_of_markers) {
+create_random_markers <- function(number_of_markers,
+                                  min_pos = 0,
+                                  max_pos = 1) {
   markers <- c()
   while (length(markers) < number_of_markers) {
-    temp_markers <- stats::runif(number_of_markers - length(markers), 0, 1)
+    temp_markers <- stats::runif(number_of_markers - length(markers),
+                                 min_pos, max_pos)
     which_dupl <- which(duplicated(temp_markers))
     if (length(which_dupl)) {
       temp_markers <- temp_markers[-which_dupl]
@@ -423,10 +451,6 @@ verify_individual <- function(indiv) {
     warning("Chromosome doesn't start at 0\n")
     return(FALSE)
   }
-  if (utils::tail(indiv$chromosome1, 1)[2] != -1) {
-    warning("Chromosome doesn't end with -1\n")
-    return(FALSE)
-  }
 
   if (max(abs(indiv$chromosome1[, 2])) > 10000) {
     warning("Memory error recorded in chromosome\n")
@@ -435,11 +459,6 @@ verify_individual <- function(indiv) {
 
   if (indiv$chromosome2[1, 1] != 0) {
     warning("Chromosome doesn't start at 0\n")
-    return(FALSE)
-  }
-
-  if (utils::tail(indiv$chromosome2, 1)[2] != -1) {
-    warning("Chromosome doesn't end with -1\n")
     return(FALSE)
   }
 
@@ -461,13 +480,17 @@ verify_population <- function(pop) {
 
   if (!methods::is(pop, "population"))  {
     if (!methods::is(pop$population, "population")) {
+      warning("pop is nog of class population")
       return(FALSE)
     } else {
       return(verify_population(pop$population))
     }
   }
   v <- unlist(lapply(pop, verify_individual))
-  if (sum(v) != length(v)) return(FALSE)
+  if (sum(v) != length(v)) {
+    warning("not all individuals passed test")
+    return(FALSE)
+  }
 
   return(TRUE)
 }
@@ -480,8 +503,224 @@ verify_population <- function(pop) {
 #' @keywords internal
 findtype <- function(chrom, pos) {
 
+  if (pos < chrom[1, 1]) {
+    return(NA)
+  }
+
+  if (pos == chrom[1, 1]) {
+    return(chrom[1, 2])
+  }
+
+  if (pos >= utils::tail(chrom[, 1], 1)) {
+    return(utils::tail(chrom[, 2], 1)) # return the last ancestry
+  }
+
   b <- which(chrom[, 1] > pos)
   chromtype <- chrom[b[1] - 1, 2]
 
   return(chromtype[[1]])
+}
+
+#' print an individual to the console
+#' @description prints an object of class genomeadmixr_data to the console
+#' @param x individual
+#' @param ... other arguments
+#' @export
+print.genomeadmixr_data <- function(x, ...) {
+  print("Data to use as input for GenomeAdmixR")
+  v1 <- paste("Number of individuals:",
+              length(x$genomes[, 1]) / 2)
+  v2 <- paste("Number of markers:",
+              length(x$genomes[1, ]))
+  print(v1)
+  print(v2)
+}
+
+
+#' @keywords internal
+print_substitution_matrix <- function(substitution_matrix) {
+  for (i in 1:4) {
+    print_str <- ""
+    for (j in 1:4) {
+      print_str <- paste(print_str, substitution_matrix[i, j])
+    }
+    message(print_str)
+  }
+}
+
+#' @keywords internal
+verify_substitution_matrix <- function(substitution_matrix) {
+  if (length(substitution_matrix == 1)) {
+    if (is.na(substitution_matrix[[1]])) {
+      stop("No substitution matrix provided")
+    }
+  }
+
+  if (dim(substitution_matrix)[[1]] != 4 ||
+      dim(substitution_matrix)[[2]] != 4) {
+    stop("\nCan not include mutations without proper substitution matrix\n",
+         "substitution matrix should be a 4x4 matrix")
+  }
+
+  if (sum(substitution_matrix == 1) > 0) {
+    warning("found rate matrix, rescaled all entries")
+    # we have to rewrite as relative matrix
+    for (i in 1:4) {
+      row_entry <- substitution_matrix[i, ]
+      row_entry <- row_entry * 0.25
+      row_entry[i] <- 0
+      row_entry[i] <- 1 - sum(row_entry)
+      substitution_matrix[i, ] <- row_entry
+    }
+  }
+
+  rs <- rowSums(substitution_matrix)
+  if (sum(rs != 1) > 0) {
+    warning("normalized rows to ensure they sum to 1")
+    substitution_matrix[1:4, ] <- substitution_matrix[1:4, ] / rs[1:4]
+  }
+
+  message("using mutation with the following substitution matrix: ")
+  print_substitution_matrix(substitution_matrix)
+
+  return(substitution_matrix)
+}
+
+#' @keywords internal
+check_markers <- function(markers, data_markers) {
+  markers_in_data <- markers %in% data_markers
+  which_markers_not_in_data <- which(markers_in_data == FALSE)
+
+  if (length(which_markers_not_in_data) > 0) {
+    warning(paste0("removing: ",
+                   length(which_markers_not_in_data),
+                   " markers as these do not exist in the original dataset"))
+    markers <- markers[-which_markers_not_in_data]
+  }
+
+  if (length(markers) == 0) {
+    stop("you have to provide markers that exist in the original dataset")
+  }
+  return(sort(markers))
+}
+
+#' @keywords internal
+get_marker_range <- function(pop1, pop2) {
+  get_min_pos <- function(indiv) {
+    return(min(indiv$chromosome1[, 1],
+               indiv$chromosome2[, 1]))
+  }
+  get_max_pos <- function(indiv) {
+    return(max(indiv$chromosome1[, 1],
+               indiv$chromosome2[, 1]))
+  }
+
+  min_positions1 <- unlist(lapply(pop1, get_min_pos))
+  min_positions2 <- unlist(lapply(pop2, get_min_pos))
+
+  max_positions1 <- unlist(lapply(pop1, get_max_pos))
+  max_positions2 <- unlist(lapply(pop2, get_max_pos))
+
+  min_pos <- min(min_positions1, min_positions2)
+  max_pos <- max(max_positions1, max_positions2)
+  return(c(min_pos, max_pos))
+}
+
+#' @keywords internal
+check_for_bases <- function(pop) {
+
+  unique_bases <- c()
+  for (i in 1:10) {
+    if (i < length(pop)) {
+      b_c1 <- unique(pop[[i]]$chromosome1[, 2])
+      b_c2 <- unique(pop[[i]]$chromosome2[, 2])
+      unique_bases <- c(unique_bases, b_c1, b_c2)
+    }
+  }
+  unique_bases <- sort(unique(unique_bases))
+  using_sequencing_data <- FALSE
+  # sum has to be at least 4, 0 represents missing data, but
+  # might not be in the data
+  if (sum(unique_bases %in% c(0, 1, 2, 3, 4)) >= 4 &&
+      sum(unique_bases %in% c(0, 1, 2, 3, 4)) <= 5) {
+    using_sequencing_data <- TRUE
+  }
+  return(using_sequencing_data)
+}
+
+#' @keywords internal
+create_recombination_map <- function(markers,
+                                     recombination_rate) {
+  distances <- diff(markers)
+  recomb_map <- c(0, distances)
+
+  # recombination rate is in cM per Mbp
+  rate_in_morgan <- recombination_rate / 100
+  rate_per_bp <- rate_in_morgan / 1000000
+
+  recomb_map <- recomb_map * rate_per_bp
+
+  return(recomb_map)
+}
+
+#' @keywords internal
+verify_genomeadmixr_data <- function(input_data, markers = NA) {
+  if (!methods::is(input_data, "genomeadmixr_data")) {
+    if (methods::is(input_data, "genomadmixr_simulation") ||
+        methods::is(input_data, "individual")) {
+      message("found simulation output, converting to genomeadmixr_data")
+      message("this may take a while")
+      input_data <-
+        simulation_data_to_genomeadmixr_data(simulation_data =
+                                               input_data,
+                                             markers = markers)
+      message("done converting, continuing as normal")
+      return(input_data)
+    } else {
+      if (is.list(input_data)) {
+        for (i in seq_along(input_data)) {
+          input_data[[i]] <- verify_genomeadmixr_data(input_data[[i]], markers)
+        }
+
+        if (length(input_data) == 1) {
+          input_data <- input_data[[1]]
+        }
+
+        return(input_data)
+      }
+    }
+  }
+
+  if (!methods::is(input_data, "genomeadmixr_data")) {
+    input_data2 <- check_input_pop(input_data)
+    if (methods::is(input_data2, "population")) {
+      message("found simulation output, converting to genomeadmixr_data")
+      message("this may take a while")
+      input_data <-
+        simulation_data_to_genomeadmixr_data(simulation_data = input_data,
+                                             markers = markers)
+      message("done converting, continuing as normal")
+    } else {
+      stop("input_data should be of class genomeadmixr_data
+              you can create such data with the functions
+              create_input_data or vcfR_to_genomeadmixr_data")
+    }
+  }
+  return(input_data)
+}
+
+#' @keywords internal
+convert_to_numeric_matrix <- function(genome_data) {
+
+  genome_numeric <- genome_data
+  genome_numeric[genome_numeric == "0/0"] <- 1
+  genome_numeric[genome_numeric == "0/1"] <- 2
+  genome_numeric[genome_numeric == "1/0"] <- 2
+  genome_numeric[genome_numeric == "1/1"] <- 3
+  genome_numeric[is.na(genome_numeric)]   <- 0
+
+  genome_numeric <- t(genome_numeric)
+  genome_numeric <- apply(genome_numeric, 2, as.numeric)
+
+  return(genome_numeric)
 }

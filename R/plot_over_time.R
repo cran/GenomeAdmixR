@@ -9,11 +9,11 @@
 #' frequencies.
 #' @return a ggplot2 object
 #' @examples
-#' pop <- simulate_admixture(pop_size = 1000,
-#'                           number_of_founders = 10,
-#'                           total_runtime = 11,
-#'                           morgan = 1,
-#'                           markers = 0.5)
+#' pop <- simulate_admixture(
+#'            module = ancestry_module(number_of_founders = 10,
+#'                                     markers = 0.5),
+#'            pop_size = 1000,
+#'            total_runtime = 11)
 #' require(ggplot2)
 #' plot_over_time(frequencies = pop$frequencies,
 #'                focal_location = 0.5)
@@ -22,7 +22,7 @@ plot_over_time <- function(frequencies,
                            focal_location) {
 
   p1 <- c()
-  to_plot <- subset(frequencies, frequencies$location == focal_location)
+  to_plot <- dplyr::filter(frequencies, .data[["location"]] == focal_location)
   if (length(to_plot$time) == 0) {
     stop("No data to plot, are you sure that the focal location\nis within the
         vector of molecular markers?\n")

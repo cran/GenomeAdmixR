@@ -16,12 +16,13 @@ select_matrix[2, ] <- c(0.27, 1.0, 1 + 0.5 * s, 1 + s, 1)
 markers <- seq(from = 0.2, to = 0.3, length.out = 100)
 
 ## ----simulate-----------------------------------------------------------------
-selected_pop <- simulate_admixture(pop_size = 1000,
-                                   number_of_founders = 4,
-                                   total_runtime = 1001,
-                                   morgan = 1,
-                                   select_matrix = select_matrix,
-                                   markers = markers)
+selected_pop <- simulate_admixture(
+                    module = ancestry_module(number_of_founders = 2,
+                                             morgan = 1,
+                                             markers = markers),
+                    pop_size = 100,
+                    total_runtime = 1001,
+                    select_matrix = select_matrix)
 
 ## ----joyplot all--------------------------------------------------------------
 time_points <- seq(from = 0, to = 1000, by = 100)

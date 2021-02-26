@@ -1,12 +1,12 @@
 #' @keywords internal
-simulate_admixture_until <- function(input_population_1 = NA,
+simulate_ancestry_until <- function(input_population_1 = NA,
                                      input_population_2 = NA,
                                      pop_size = c(100, 100),
                                      initial_frequencies = list(c(1.0, 0),
                                                                 c(0, 1.0)),
                                      total_runtime = 100,
                                      morgan = 1,
-                                     seed = NULL,
+                                     num_threads = 1,
                                      select_matrix = NA,
                                      markers = NA,
                                      verbose = FALSE,
@@ -19,17 +19,13 @@ simulate_admixture_until <- function(input_population_1 = NA,
                                      number_of_markers = 100,
                                      random_markers = TRUE) {
 
-  if (is.null(seed)) {
-    seed <- round(as.numeric(Sys.time()))
-  }
-
-  pops <- simulate_admixture_migration(
+  pops <- simulate_ancestry_migration(
     input_population_1 = input_population_1,
     input_population_2 = input_population_2,
     pop_size = pop_size,
     initial_frequencies = initial_frequencies,
     total_runtime = generations_between_update,
-    seed = seed,
+    num_threads = num_threads,
     morgan = morgan,
     select_matrix = select_matrix,
     markers = markers,
@@ -38,26 +34,26 @@ simulate_admixture_until <- function(input_population_1 = NA,
     multiplicative_selection = multiplicative_selection,
     migration_rate = migration_rate)
 
-  fst <- calculate_fst(pops$population_1, pops$population_2,
+  fst <- calculate_fst(pop1 = pops$population_1,
+                       pop2 = pops$population_2,
                        sampled_individuals = sampled_individuals,
                        number_of_markers = number_of_markers,
                        random_markers = random_markers)
 
-  cnt <- 3
-  message("Number of Generations\tFST\n")
-  message(generations_between_update, "\t", fst, "\n")
+  message("Number of Generations\tFST")
+  message(generations_between_update, "\t", fst)
 
   total_generations <- generations_between_update
   while (fst < critical_fst && total_generations < total_runtime) {
 
-    pops <- simulate_admixture_migration(
+    pops <- simulate_ancestry_migration(
       input_population_1 = pops$population_1,
       input_population_2 = pops$population_2,
       pop_size = pop_size,
       initial_frequencies = initial_frequencies,
       total_runtime = generations_between_update,
       morgan = morgan,
-      seed = seed + cnt,
+      num_threads = num_threads,
       select_matrix = select_matrix,
       markers = markers,
       verbose = verbose,
@@ -65,17 +61,17 @@ simulate_admixture_until <- function(input_population_1 = NA,
       multiplicative_selection = multiplicative_selection,
       migration_rate = migration_rate)
 
-    cnt <- cnt + 2
     fst <- calculate_fst(pops$population_1, pops$population_2,
                          sampled_individuals = sampled_individuals,
                          number_of_markers = number_of_markers,
                          random_markers = random_markers)
 
     total_generations <- total_generations + generations_between_update
-    message(total_generations, "\t", fst, "\n")
+    message(total_generations, "\t", fst)
   }
-  return(list("Population_1" = pops$population_1,
-              "Population_2" = pops$population_2,
+
+  return(list("population_1" = pops$population_1,
+              "population_2" = pops$population_2,
               "Number_of_generations" = total_generations,
               "FST" = fst))
 }
