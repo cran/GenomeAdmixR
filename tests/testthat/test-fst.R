@@ -34,13 +34,13 @@ testthat::test_that("fst", {
   v2 <- calculate_fst(pop1, pop2,
                       sampled_individuals,
                       number_of_markers, random_markers = FALSE)
-  testthat::expect_equal(v1, v2, tolerance = 0.1)
+
+  testthat::expect_equal(v1, v2, tolerance = 0.2)
 
   pop_size <- 100
   number_of_founders <- 10
   run_time <- 1000
   morgan <- 1
-  overlap <- 0.0
 
   pop1 <- simulate_admixture(module = ancestry_module(number_of_founders =
                                                         number_of_founders,
@@ -62,5 +62,5 @@ testthat::test_that("fst", {
   v1 <- calculate_fst(pop1, pop2,
                       number_of_markers, random_markers = TRUE)
 
-  testthat::expect_equal(1.0, v1, tolerance = 0.1)
+  testthat::expect_equal(1.0, v1, tolerance = 0.2)
 })
