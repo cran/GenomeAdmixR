@@ -26,7 +26,14 @@
     </style>
 
 
-<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
@@ -140,7 +147,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(GenomeAdmixR)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">packageVersion</span>(<span class="st">&quot;GenomeAdmixR&quot;</span>)</span></code></pre></div>
-<pre><code>## [1] &#39;2.1.1&#39;</code></pre>
+<pre><code>## [1] &#39;2.1.2&#39;</code></pre>
 <p>We will analyze whether we can genetically tell apart two populations, where one population was founded by crossing two isofemale lines that were created from the same source population, and the other population was founded by crossing two isofemale lines created from different source populations.</p>
 <p>First, we generate two source populations using  and then increase the founder labels in the second population to ensure that both populations do not share founder labels.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>pops <span class="ot">&lt;-</span></span>
@@ -203,11 +210,11 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>f3 <span class="ot">&lt;-</span> <span class="fu">calculate_fst</span>(pop_1_2, pop_2_2,</span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">sampled_individuals =</span> <span class="dv">10</span>, <span class="at">number_of_markers =</span> <span class="dv">100</span>)</span>
 <span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>f1</span></code></pre></div>
-<pre><code>## [1] 0.3902653</code></pre>
+<pre><code>## [1] 0.4037593</code></pre>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>f2</span></code></pre></div>
-<pre><code>## [1] 0.4424637</code></pre>
+<pre><code>## [1] 0.4103707</code></pre>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>f3</span></code></pre></div>
-<pre><code>## [1] 0.4384123</code></pre>
+<pre><code>## [1] 0.3794992</code></pre>
 <p>Which confirms our hypothesis and demonstrates how combining isofemale lines from different source populations generates a population with maximal genetic diversity.</p>
 </div>
 
