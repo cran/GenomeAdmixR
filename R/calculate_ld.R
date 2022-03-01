@@ -38,7 +38,7 @@ calculate_ld <- function(pop,
 
   if (length(markers) == 1) {
     if (is.na(markers)) {
-      if (class(pop) == "genomeadmixr_data") {
+      if (inherits(pop, "genomadmixr_data")) {
         markers <- pop$markers
       }
     } else {
@@ -99,7 +99,8 @@ count_ab <- function(alleles_pos_1, alleles_pos_2, a, b) {
 #' @param alleles_pos_2 alleles at locus 2
 #' @return a list with two entries: LD and r_squared
 #' @export
-calculate_average_ld <- function(alleles_pos_1, alleles_pos_2) {
+calculate_average_ld <- function(alleles_pos_1,
+                                 alleles_pos_2) {
   all_alleles <- c(as.vector(alleles_pos_1), as.vector(alleles_pos_2))
 
   if (sum(is.na(all_alleles)) > 0) {

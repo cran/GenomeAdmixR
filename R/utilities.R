@@ -7,17 +7,17 @@
 #' @keywords internal
 check_input_pop <- function(pop) {
 
-  if (class(pop) == "individual") {
+  if (inherits(pop, "individual")) {
     pop <- list(pop)
     class(pop) <- "population"
   }
 
-  if (!methods::is(pop, "population")) {
+  if (!inherits(pop, "population")) {
     if (is.list(pop)) {
-      if (methods::is(pop$population, "population")) {
+      if (inherits(pop$population, "population")) {
         pop <- pop$population
       } else{
-        if (methods::is(pop$population_1, "population")) {
+        if (inherits(pop$population_1, "population")) {
           warning("Warning, only population 1 is processed\n
               explicitly pass a population to remedy this\n")
           pop <- pop$population_1
@@ -259,8 +259,8 @@ increase_ancestor <- function(population, increment = 20) {
     return(indiv)
   }
 
-  if (!methods::is(population, "population")) {
-    if (methods::is(population$population, "population")) {
+  if (!inherits(population, "population")) {
+    if (inherits(population$population, "population")) {
       population <- population$population
     }
   }
@@ -323,6 +323,7 @@ calc_allele_frequencies <- function(indiv, alleles) {
 #' @description prints an object of class individual to the console
 #' @param x individual
 #' @param ... other arguments
+#' @return No return value
 #' @export
 print.individual <- function(x, ...) {
   print("Individual with two Chromosomes")
@@ -445,7 +446,7 @@ create_pop_class <- function(pop) {
 #' @keywords internal
 verify_individual <- function(indiv) {
 
-  if (!methods::is(indiv, "individual")) return(FALSE)
+  if (!inherits(indiv, "individual")) return(FALSE)
 
   if (indiv$chromosome1[1, 1] != 0) {
     warning("Chromosome doesn't start at 0\n")
@@ -478,8 +479,8 @@ verify_individual <- function(indiv) {
 #' @keywords internal
 verify_population <- function(pop) {
 
-  if (!methods::is(pop, "population"))  {
-    if (!methods::is(pop$population, "population")) {
+  if (!inherits(pop, "population"))  {
+    if (!inherits(pop$population, "population")) {
       warning("pop is nog of class population")
       return(FALSE)
     } else {
@@ -525,6 +526,7 @@ findtype <- function(chrom, pos) {
 #' @description prints an object of class genomeadmixr_data to the console
 #' @param x individual
 #' @param ... other arguments
+#' @return No return value
 #' @export
 print.genomeadmixr_data <- function(x, ...) {
   print("Data to use as input for GenomeAdmixR")
@@ -580,8 +582,8 @@ verify_substitution_matrix <- function(substitution_matrix) {
     substitution_matrix[1:4, ] <- substitution_matrix[1:4, ] / rs[1:4]
   }
 
-  message("using mutation with the following substitution matrix: ")
-  print_substitution_matrix(substitution_matrix)
+#  message("using mutation with the following substitution matrix: ")
+#  print_substitution_matrix(substitution_matrix)
 
   return(substitution_matrix)
 }
@@ -669,17 +671,20 @@ create_recombination_map <- function(markers,
 }
 
 #' @keywords internal
-verify_genomeadmixr_data <- function(input_data, markers = NA) {
-  if (!methods::is(input_data, "genomeadmixr_data")) {
-    if (methods::is(input_data, "genomadmixr_simulation") ||
-        methods::is(input_data, "individual")) {
-      message("found simulation output, converting to genomeadmixr_data")
-      message("this may take a while")
+verify_genomeadmixr_data <- function(input_data, markers = NA,
+                                     verbose = FALSE) {
+  if (!inherits(input_data, "genomeadmixr_data")) {
+    if (inherits(input_data, "genomadmixr_simulation") ||
+        inherits(input_data, "individual")) {
+      if (verbose) {
+        message("found simulation output, converting to genomeadmixr_data")
+        message("this may take a while")
+      }
       input_data <-
         simulation_data_to_genomeadmixr_data(simulation_data =
                                                input_data,
                                              markers = markers)
-      message("done converting, continuing as normal")
+      if (verbose) message("done converting, continuing as normal")
       return(input_data)
     } else {
       if (is.list(input_data)) {
@@ -696,15 +701,17 @@ verify_genomeadmixr_data <- function(input_data, markers = NA) {
     }
   }
 
-  if (!methods::is(input_data, "genomeadmixr_data")) {
+  if (!inherits(input_data, "genomeadmixr_data")) {
     input_data2 <- check_input_pop(input_data)
-    if (methods::is(input_data2, "population")) {
-      message("found simulation output, converting to genomeadmixr_data")
-      message("this may take a while")
+    if (inherits(input_data2, "population")) {
+      if (verbose) {
+        message("found simulation output, converting to genomeadmixr_data")
+        message("this may take a while")
+      }
       input_data <-
         simulation_data_to_genomeadmixr_data(simulation_data = input_data,
                                              markers = markers)
-      message("done converting, continuing as normal")
+      if (verbose) message("done converting, continuing as normal")
     } else {
       stop("input_data should be of class genomeadmixr_data
               you can create such data with the functions
