@@ -7,6 +7,7 @@
 
 #include "helper_functions.h"
 #include <vector>
+#include <array>
 #include <string>
 #include <thread>
 #include <chrono>
@@ -16,7 +17,7 @@
 
 void force_output() {
 //  std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  std::this_thread::sleep_for(std::chrono::milliseconds(30));
   R_FlushConsole();
   R_ProcessEvents();
   R_CheckUserInterrupt();
@@ -248,7 +249,6 @@ int draw_prop_fitness(const std::vector<double>& fitness,
   }
 }
 
-
 std::vector< Fish > convert_NumericVector_to_fishVector(const NumericVector& v) {
   std::vector< Fish > output;
 
@@ -257,8 +257,6 @@ std::vector< Fish > convert_NumericVector_to_fishVector(const NumericVector& v) 
   bool add_indiv = false;
 
   junction prev_j(-1, 0);
-
-  int num_indiv = 0;
 
   for (int i = 0; i < v.size(); i += 2) {
     junction temp_j;
@@ -279,8 +277,6 @@ std::vector< Fish > convert_NumericVector_to_fishVector(const NumericVector& v) 
       indic_chrom = 1;
       temp.chromosome1.clear();
       temp.chromosome2.clear();
-
-      num_indiv++;
     }
 
     if (indic_chrom == 1) {
@@ -296,7 +292,6 @@ std::vector< Fish > convert_NumericVector_to_fishVector(const NumericVector& v) 
 
   return(output);
 }
-
 
 List convert_to_list(const std::vector<Fish>& v) {
   int list_size = (int)v.size();
@@ -329,34 +324,36 @@ List convert_to_list(const std::vector<Fish>& v) {
 }
 
 double calculate_fitness(const Fish& focal,
-                         const NumericMatrix& select,
+                         const std::vector< std::array<double, 5>>& select,
                          bool multiplicative_selection) {
 
-  int number_of_markers = select.nrow();
+  int number_of_markers = select.size();
   std::vector< int > num_alleles(number_of_markers, 0);
 
   int focal_marker = 0;
-  double pos = select(focal_marker, 0);
-  double anc = select(focal_marker, 4);
+  double pos = select[focal_marker][0];
+  double anc = select[focal_marker][4];
   // loc aa  Aa  AA ancestor
   //  0  1   2  3  4
 
-  for(auto it = (focal.chromosome1.begin()+1); it != focal.chromosome1.end(); ++it) {
+  for(auto it = (focal.chromosome1.begin()+1);
+      it != focal.chromosome1.end();
+      ++it) {
     if ((*it).pos > pos) {
       if ((*(it-1)).right == anc) num_alleles[focal_marker]++;
       focal_marker++;
       if(focal_marker >= number_of_markers) {
         break;
       }
-      pos = select(focal_marker, 0);
-      anc = select(focal_marker, 4);
+      pos = select[focal_marker][0];
+      anc = select[focal_marker][4];
     }
     if (anc < 0) break; // these entries are only for tracking alleles over time, not for selection calculation
   }
 
   focal_marker = 0;
-  pos = select(focal_marker, 0);
-  anc = select(focal_marker, 4);
+  pos = select[focal_marker][0];
+  anc = select[focal_marker][4];
 
   for(auto it = (focal.chromosome2.begin()+1); it != focal.chromosome2.end(); ++it) {
     if ((*it).pos > pos) {
@@ -365,8 +362,8 @@ double calculate_fitness(const Fish& focal,
       if (focal_marker >= number_of_markers) {
         break;
       }
-      pos = select(focal_marker, 0);
-      anc = select(focal_marker, 4);
+      pos = select[focal_marker][0];
+      anc = select[focal_marker][4];
     }
     if(anc < 0) break; // these entries are only for tracking alleles over time, not for selection calculation
   }
@@ -374,13 +371,17 @@ double calculate_fitness(const Fish& focal,
   double fitness = 0.0;
   if (multiplicative_selection) fitness = 1.0;
   for (size_t i = 0; i < num_alleles.size(); ++i) {
-    if(select(i, 4) < 0) break; // these entries are only for tracking alleles over time, not for selection calculation
+    if(select[i][4] < 0) break; // these entries are only for tracking alleles over time, not for selection calculation
 
     int fitness_index = 1 + num_alleles[i];
+    if (fitness_index > select[0].size()) {
+      throw "fitness_index out of select range";
+    }
+
     if (multiplicative_selection) {
-      fitness *= select(i, fitness_index);
+      fitness *= select[i][fitness_index];
     } else {
-      fitness += select(i, fitness_index);
+      fitness += select[i][fitness_index];
     }
   }
 
@@ -611,30 +612,11 @@ NumericVector scale_markers(const Rcpp::NumericVector& markers,
 
   Rcpp::NumericVector outputmarkers(markers.size());
 
- // double max = *std::max_element(markers.begin(), markers.end());
-
   for(int i = 0; i < markers.size(); ++i) {
     outputmarkers[i] = markers[i] * 1.0 / morgan;
   }
   return outputmarkers;
 }
-
-std::vector<double> scale_markers(const std::vector<double>& markers,
-                                  double morgan) {
-  if (markers.size() == 1) {
-    return markers;
-  }
-
-  std::vector<double> outputmarkers(markers.size());
-
- // double max = *std::max_element(markers.begin(), markers.end());
-
-  for (size_t i = 0; i < markers.size(); ++i) {
-    outputmarkers[i] = markers[i] * 1.0 / morgan;
-  }
-  return outputmarkers;
-}
-
 
 
 //// EMP helper functions ///
@@ -658,52 +640,47 @@ std::vector< Fish_emp > convert_numeric_matrix_to_fish_vector(
   return(output);
 }
 
-void update_founder_labels(const std::vector<int>& chrom,
-                           std::vector<int>& founder_labels) {
-  for(auto i = chrom.begin(); i != chrom.end(); ++i) {
-    if(founder_labels.empty()) {
-       founder_labels.push_back((*i));
-    } else {
-      if(find_index(founder_labels, (*i)) == -1) {
-        founder_labels.push_back((*i));
-      }
-    }
-  }
-  return;
-}
-
-
-
 double calculate_fitness(const Fish_emp& focal,
-                         const NumericMatrix& select,
+                         const std::vector<std::array<double, 5>>& select,
                          const std::vector<double>& locations,
                          bool multiplicative_selection) {
 
-  int number_of_markers = select.nrow();
+  int number_of_markers = select.size();
   std::vector<double> fitness_vec(number_of_markers);
 
+  if (select[0].size() < 5) {
+    Rcout << "select matrix too small"; force_output();
+    throw "select matrix too small";
+  }
+
   for (int i = 0; i < number_of_markers; ++i) {
-    auto focal_pos = select(i, 0);
-    auto focal_anc = select(i, 4);
+    auto focal_pos = select[i][0];
+    auto focal_anc = select[i][4];
     if (focal_anc == -1) continue; // do not take into account
     int focal_index = find_location(locations, focal_pos);
+
+    if (focal_index < 0 || focal_index > focal.chromosome1.size()) {
+      Rcout << "focal_index out of range"; force_output();
+      throw "focal_index out of range";
+    }
 
     auto a1 = focal.chromosome1[focal_index];
     auto a2 = focal.chromosome2[focal_index];
     int fit_index = 1 + (a1 == focal_anc) + (a2 == focal_anc);
-    fitness_vec[i] = select(i, fit_index);
+    if (fit_index > select[0].size()) {
+      Rcout << "fit_index out of range"; force_output();
+      throw "fit_index out of range";
+    }
+    fitness_vec[i] = select[i][fit_index];
  //   Rcout << a1 << " " << a2 << " " << select(i, fit_index) << "\n";
   }
 
-  if (!multiplicative_selection) {
-    return std::accumulate(fitness_vec.begin(), fitness_vec.end(), 0.0);
-  }
+  double output = multiplicative_selection ?
+      std::accumulate(fitness_vec.begin(), fitness_vec.end(), 1.0,
+                             std::multiplies<>()) :
+      std::accumulate(fitness_vec.begin(), fitness_vec.end(), 0.0);
 
-  return std::accumulate(fitness_vec.begin(), fitness_vec.end(), 1.0,
-                         std::multiplies<>());
-
-
-
+  return output;
 }
 
 List convert_to_list(const std::vector<Fish_emp>& v,
@@ -784,15 +761,9 @@ int find_location(const std::vector<double>& markers,
       return std::distance(markers.begin(), loc);
     }
   }
-
-  /*for (int i = 0; i < markers.size(); ++i) {
-    if (markers[i] == pos) {
-      return i;
-    }
-  }*/
-  return - 1;
-
-//  return 0;
+  Rcout << "could not find location\n"; force_output();
+  throw "could not find location\n";
+  return -1;
 }
 
 arma::mat update_all_frequencies_tibble(const std::vector< Fish_emp >& pop,
@@ -869,25 +840,6 @@ bool matching_chromosomes(const std::vector< int >& v1,
     }
   }
   return true;
-}
-
-int count_num_j(const std::vector< int >& chrom) {
-  int num_j = 0;
-  for (size_t i = 1; i < chrom.size(); ++i) {
-    if (chrom[i] != chrom[i - 1]) num_j++;
-  }
-  return(num_j);
-}
-
-
-double number_of_junctions(const std::vector< Fish_emp>& pop) {
-  double num_j = 0.0;
-  for(const auto& i : pop) {
-    num_j += count_num_j(i.chromosome1);
-    num_j += count_num_j(i.chromosome2);
-  }
-  num_j *= 1.0 / (2 * pop.size());
-  return(num_j);
 }
 
 arma::mat record_frequencies_pop(const std::vector< Fish_emp >& pop,
@@ -997,18 +949,13 @@ void mutate(Fish_emp& indiv,
 
 std::vector<int> get_alleles(int focal_genotype,
                              int allele_1,
-                             int allele_2,
-                             rnd_t& rndgen) {
+                             int allele_2) {
 
   if (focal_genotype == 1) {
     return {allele_1, allele_1};
   }
   if (focal_genotype == 2) {
-   // if (rndgen.random_number(2) == 0) {
       return {allele_1, allele_2};
-  //  } else {
-    //  return {allele_2, allele_1};
-  //  }
   }
   if (focal_genotype == 3) {
     return {allele_2, allele_2};
@@ -1021,13 +968,10 @@ std::vector<int> get_alleles(int focal_genotype,
 NumericMatrix vcf_to_matrix_cpp(const Rcpp::NumericMatrix input_mat,
                             const NumericVector& allele_1,
                             const NumericVector& allele_2) {
-try {
   int num_indiv = input_mat.nrow();
   int num_markers = allele_1.size();
 
   NumericMatrix output(2 * num_indiv, num_markers);
-
-  rnd_t rndgen;
 
   for (int i = 0; i < num_indiv; ++i) {
     int index_c1 = i * 2;
@@ -1036,18 +980,23 @@ try {
     for (int j = 0; j < num_markers; ++j) {
       std::vector< int > alleles = get_alleles(input_mat(i, j),
                                                allele_1[j],
-                                               allele_2[j],
-                                               rndgen);
+                                               allele_2[j]);
       output(index_c1, j) = alleles[0];
       output(index_c2, j) = alleles[1];
     }
   }
 
   return output;
-} catch(std::exception &ex) {
-  forward_exception_to_r(ex);
-} catch(...) {
-  ::Rf_error("c++ exception (unknown reason)");
 }
-return NA_REAL;
+
+std::vector< std::array<double, 5> > convert_select_from_r(const Rcpp::NumericMatrix& select) {
+  std::vector< std::array<double, 5> > select_matrix;
+  for (size_t i = 0; i < select.nrow(); ++i) {
+    std::array<double, 5> row_entry;
+    for (size_t j = 0; j < select.ncol(); ++j) {
+      row_entry[j] = select(i, j);
+    }
+    select_matrix.push_back(row_entry);
+  }
+  return select_matrix;
 }

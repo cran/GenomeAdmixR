@@ -133,7 +133,6 @@ test_that("cpp classes", {
 
 test_that("create_isofemale_data", {
   testthat::skip_on_os("solaris")
-
  data("dgrp2.3R.5k.data")
 
  females <- create_iso_female(module = sequence_module(

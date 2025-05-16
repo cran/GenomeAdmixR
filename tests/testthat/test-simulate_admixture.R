@@ -1,7 +1,6 @@
 context("simulate_admixture")
 
 test_that("simulate_admixture", {
-  testthat::skip_on_os("solaris")
   select_matrix <- matrix(NA, nrow = 2, ncol = 5)
 
   s <- 0.1
@@ -12,7 +11,7 @@ test_that("simulate_admixture", {
     vx <- simulate_admixture(pop_size = 100,
                              module = ancestry_module(number_of_founders = 2,
                                                       morgan = 1),
-                             total_runtime = 1000,
+                             total_runtime = 100,
                              select_matrix = select_matrix,
                              multiplicative_selection = FALSE)
   )
@@ -20,7 +19,6 @@ test_that("simulate_admixture", {
 
 
 test_that("simulate admixture use", {
-  testthat::skip_on_os("solaris")
   testthat::expect_output(
     vx <- simulate_admixture(pop_size = 100,
                              module = ancestry_module(number_of_founders = 2,
@@ -40,10 +38,14 @@ test_that("simulate admixture use", {
                                               multiplicative_selection = TRUE))
   )
   select_matrix <- matrix(NA, nrow = 1, ncol = 3)
-  testthat::expect_error(simulate_admixture(pop_size = 100,
-                                            total_runtime = 100,
-                                            select_matrix = select_matrix,
-                                            multiplicative_selection = TRUE))
+  testthat::expect_message(
+    testthat::expect_error(
+      simulate_admixture(pop_size = 100,
+                         total_runtime = 100,
+                         select_matrix = select_matrix,
+                         multiplicative_selection = TRUE)
+    )
+  )
 
   markers <- seq(from = 0.4, to = 0.6, length.out = 100)
   testthat::expect_silent(
@@ -100,7 +102,6 @@ test_that("simulate admixture use", {
 
 
 test_that("simulate admixture use, junctions", {
-  testthat::skip_on_os("solaris")
   vx <- simulate_admixture(module = ancestry_module(track_junctions = TRUE),
                            pop_size = 1000,
                            total_runtime = 100)

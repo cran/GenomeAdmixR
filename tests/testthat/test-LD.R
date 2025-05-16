@@ -18,12 +18,13 @@ test_that("calculate_average_LD", {
   outcome <- calculate_ld(pop1,
                           markers = markers)
 
-  testthat::expect_message(
-    calculate_ld(pop1,
-                 markers = markers,
-                 verbose = TRUE)
+  testthat::expect_output(
+    testthat::expect_message(
+      calculate_ld(pop1,
+                   markers = markers,
+                   verbose = TRUE)
+    )
   )
-
   testthat::expect_equal(mean(outcome$ld_matrix, na.rm = T), 0.0)
 
 
@@ -47,7 +48,6 @@ test_that("calculate_average_LD", {
 })
 
 test_that("calculate_LD_matrix", {
-  testthat::skip_on_os("solaris")
   pop_size <- 100
   number_of_founders <- 2
   sampled_individuals <- pop_size

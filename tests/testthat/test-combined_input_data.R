@@ -1,7 +1,6 @@
 context("test input data")
 
 test_that("input data", {
-  testthat::skip_on_os("solaris")
 
   chosen_markers <- 1:100
 
@@ -59,21 +58,25 @@ test_that("input data", {
                                                pop_size = 1000,
                                                total_runtime = 10)
 
-  num_j <- c()
-  for (i in seq_along(simulation_result$population)) {
-    focal_indiv <- simulation_result$population[[i]]
-    chrom1 <- focal_indiv$chromosome1
-    chrom2 <- focal_indiv$chromosome2
-    num_j_1 <- sum(abs(diff(chrom1[, 2])))
-    num_j_2 <- sum(abs(diff(chrom2[, 2])))
-    num_j <- c(num_j, num_j_1, num_j_2)
+  if (requireNamespace("junctions")) {
+
+    num_j <- c()
+    for (i in seq_along(simulation_result$population)) {
+      focal_indiv <- simulation_result$population[[i]]
+      chrom1 <- focal_indiv$chromosome1
+      chrom2 <- focal_indiv$chromosome2
+      num_j_1 <- sum(abs(diff(chrom1[, 2])))
+      num_j_2 <- sum(abs(diff(chrom2[, 2])))
+      num_j <- c(num_j, num_j_1, num_j_2)
+    }
+    expected_j <- junctions::number_of_junctions(N = 1000, R = 1000, t = 10)
+    testthat::expect_equal(mean(num_j), expected_j, tolerance = 1)
   }
-  expected_j <- junctions::number_of_junctions(N = 1000, R = 1000, t = 10)
-  testthat::expect_equal(mean(num_j), expected_j, tolerance = 1)
 })
 
 test_that("input data simulation", {
   testthat::skip_on_os("solaris")
+
 
   vx <- simulate_admixture(pop_size = 100,
                            total_runtime = 100)

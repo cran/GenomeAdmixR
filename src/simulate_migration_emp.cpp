@@ -16,6 +16,7 @@
 #include "Fish_emp.h"
 #include "random_functions.h"
 #include "helper_functions.h"
+#include "util.h"
 
 #include <RcppParallel.h>
 #include <RcppArmadillo.h>
@@ -83,7 +84,6 @@ std::vector< Fish_emp > next_pop_migr(const std::vector< Fish_emp >& pop_1,
 
     for (size_t i = 0; i < pop_size; ++i) {
 
-
       int index1, index2;
       Fish_emp parent1 = draw_parent(pop_1, pop_2, migration_rate,
                                      use_selection,
@@ -129,13 +129,13 @@ std::vector< Fish_emp > next_pop_migr(const std::vector< Fish_emp >& pop_1,
       }
     }
 
-    tbb::task_scheduler_init _tbb((num_threads > 0) ? num_threads : tbb::task_scheduler_init::automatic);
+    set_num_threads();
 
     tbb::parallel_for(
       tbb::blocked_range<unsigned>(0, pop_size),
       [&](const tbb::blocked_range<unsigned>& r) {
 
-        rnd_t rndgen2(seed_values[seed_index]);
+        thread_local rnd_t rndgen2(seed_values[seed_index]);
         {
           std::lock_guard<std::mutex> _(mutex);
           seed_index++;
@@ -148,7 +148,6 @@ std::vector< Fish_emp > next_pop_migr(const std::vector< Fish_emp >& pop_1,
         }
 
         for (unsigned i = r.begin(); i < r.end(); ++i) {
-
 
           int index1, index2;
           Fish_emp parent1 = draw_parent(pop_1, pop_2, migration_rate,
@@ -187,7 +186,7 @@ std::vector< std::vector< Fish_emp > > simulate_two_populations(
     const std::vector< Fish_emp>& source_pop_1,
     const std::vector< Fish_emp>& source_pop_2,
     const std::vector<double>& marker_positions,
-    const NumericMatrix& select,
+    const NumericMatrix& select_r,
     const std::vector<size_t>& pop_size,
     int total_runtime,
     double morgan,
@@ -206,15 +205,22 @@ std::vector< std::vector< Fish_emp > > simulate_two_populations(
     int num_threads) {
 
   bool use_selection = false;
-  if (select(1, 1) >= 0) use_selection = true;
+  if (select_r(0, 0) >= 0) use_selection = true;
 
   std::vector<Fish_emp> pop_1 = source_pop_1;
   std::vector<Fish_emp> pop_2 = source_pop_2;
 
+  if (pop_1.empty() || pop_2.empty()) {
+    throw "empty populations";
+  }
+
   std::vector<double> fitness_pop_1(pop_1.size(), 0.0);
   std::vector<double> fitness_pop_2(pop_2.size(), 0.0);
 
+  std::vector< std::array< double, 5 >> select;
+
   if (use_selection) {
+    select = convert_select_from_r(select_r);
     for (size_t i = 0; i < pop_1.size(); ++i) {
       fitness_pop_1[i] = calculate_fitness(pop_1[i], select,
                                            marker_positions,
@@ -264,55 +270,60 @@ std::vector< std::vector< Fish_emp > > simulate_two_populations(
       }
     }
 
-    std::vector<double> new_fitness_pop_1(pop_1.size(), 0.0);
-    std::vector<double> new_fitness_pop_2(pop_2.size(), 0.0);
-
     std::vector<Fish_emp> new_generation_pop_1 = next_pop_migr(pop_1, // resident
                                                                pop_2, // migrants
                                                                marker_positions,
                                                                pop_size[0],
-                                                                       fitness_pop_1,
-                                                                       fitness_pop_2,
-                                                                       max_fitness_pop_1,
-                                                                       max_fitness_pop_2,
-                                                                       select,
-                                                                       use_selection,
-                                                                       multiplicative_selection,
-                                                                       migration_rate,
-                                                                       morgan,
-                                                                       mutation_rate,
-                                                                       substitution_matrix,
-                                                                       emp_gen,
-                                                                       num_threads);
+                                                               fitness_pop_1,
+                                                               fitness_pop_2,
+                                                               max_fitness_pop_1,
+                                                               max_fitness_pop_2,
+                                                               select_r,
+                                                               use_selection,
+                                                               multiplicative_selection,
+                                                               migration_rate,
+                                                               morgan,
+                                                               mutation_rate,
+                                                               substitution_matrix,
+                                                               emp_gen,
+                                                               num_threads);
 
     std::vector<Fish_emp> new_generation_pop_2 = next_pop_migr(pop_2,  // resident
                                                                pop_1,  // migrants
                                                                marker_positions,
                                                                pop_size[1],
-                                                                       fitness_pop_2,
-                                                                       fitness_pop_1,
-                                                                       max_fitness_pop_2,
-                                                                       max_fitness_pop_1,
-                                                                       select,
-                                                                       use_selection,
-                                                                       multiplicative_selection,
-                                                                       migration_rate,
-                                                                       morgan,
-                                                                       mutation_rate,
-                                                                       substitution_matrix,
-                                                                       emp_gen,
-                                                                       num_threads);
+                                                               fitness_pop_2,
+                                                               fitness_pop_1,
+                                                               max_fitness_pop_2,
+                                                               max_fitness_pop_1,
+                                                               select_r,
+                                                               use_selection,
+                                                               multiplicative_selection,
+                                                               migration_rate,
+                                                               morgan,
+                                                               mutation_rate,
+                                                               substitution_matrix,
+                                                               emp_gen,
+                                                               num_threads);
     pop_1 = new_generation_pop_1;
     pop_2 = new_generation_pop_2;
 
+    if (pop_1.empty() || pop_2.empty()) {
+      throw "pop magically became empty?";
+    }
+
     if (use_selection) {
+      fitness_pop_1 = std::vector<double>(pop_1.size(), 0.0);
+      fitness_pop_2 = std::vector<double>(pop_2.size(), 0.0);
       for (size_t i = 0; i < pop_1.size(); ++i) {
         fitness_pop_1[i] = calculate_fitness(pop_1[i], select,
-                                             marker_positions, multiplicative_selection);
+                                             marker_positions,
+                                             multiplicative_selection);
       }
       for (size_t i = 0; i < pop_2.size(); ++i) {
         fitness_pop_2[i] = calculate_fitness(pop_2[i], select,
-                                             marker_positions, multiplicative_selection);
+                                             marker_positions,
+                                             multiplicative_selection);
       }
       max_fitness_pop_1 = *std::max_element(fitness_pop_1.begin(),
                                             fitness_pop_1.end());
