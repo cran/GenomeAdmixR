@@ -1,7 +1,7 @@
 Type: Package
 Package: GenomeAdmixR
 Title: Simulate Admixture of Genomes
-Version: 2.1.11
+Version: 2.1.12
 Authors@R: 
     c(person(given = "Thijs",
              family = "Janzen",
@@ -31,10 +31,10 @@ Encoding: UTF-8
 RoxygenNote: 7.3.2
 Depends: R (>= 2.10)
 NeedsCompilation: yes
-Packaged: 2025-05-20 09:36:42 UTC; thijsjanzen
+Packaged: 2025-06-20 09:51:42 UTC; thijsjanzen
 Author: Thijs Janzen [aut, cre],
   Fernando Diaz G. [ctb],
   Richèl J.C. Bilderbeek [ctb]
 Maintainer: Thijs Janzen <thijsjanzen@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-05-20 12:00:05 UTC
+Date/Publication: 2025-06-20 10:40:02 UTC
