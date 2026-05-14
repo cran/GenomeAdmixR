@@ -1,11 +1,13 @@
 ## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.width = 6)
+RcppParallel::setThreadOptions( getOption("Ncpus",  RcppParallel::defaultNumThreads()) )
 
 ## -----------------------------------------------------------------------------
 library(GenomeAdmixR)
 library(ggplot2)
 packageVersion("GenomeAdmixR")
+
 
 ## ----setup select_matrix------------------------------------------------------
 select_matrix <- matrix(ncol = 5, nrow = 2)
@@ -22,6 +24,7 @@ selected_pop <- simulate_admixture(
                                              markers = markers),
                     pop_size = 100,
                     total_runtime = 1001,
+                    num_threads = 1,
                     select_matrix = select_matrix)
 
 ## ----joyplot all--------------------------------------------------------------

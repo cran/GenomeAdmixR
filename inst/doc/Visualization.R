@@ -10,9 +10,10 @@ population <- simulate_admixture(
                       module = ancestry_module(markers = 
                                                 c(0.5, 
                                                  seq(0, 1, length.out = 100))),
-                                pop_size = 1000,
-                                 total_runtime = 200,
-                                 select_matrix = select_matrix)
+                      pop_size = 1000,
+                      num_threads = 1,
+                      total_runtime = 200,
+                      select_matrix = select_matrix)
 
 ## ----plot over time-----------------------------------------------------------
 plot_over_time(population$frequencies, focal_location = 0.500)

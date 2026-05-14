@@ -11,6 +11,7 @@ print_mat <- function(mat) {
     paste0(mat[n, ], collapse = " & "),
     "\\end{bmatrix}")
 }
+RcppParallel::setThreadOptions( getOption("Ncpus",  RcppParallel::defaultNumThreads()) )
 
 ## ----creating fake data 2-----------------------------------------------------
   fake_input_data <-
@@ -25,6 +26,7 @@ print_mat <- function(mat) {
 simulated_pop <- simulate_admixture(
                     module = sequence_module(molecular_data = fake_input_data),
                     pop_size = 100,
+                    num_threads = 1,
                     total_runtime = 100)
 
 ## ----creating fake data-------------------------------------------------------
@@ -49,6 +51,7 @@ simulated_pop <- simulate_admixture(
                                                markers = 1:100,
                                                morgan = 1),
                       pop_size = 1000,
+                      num_threads = 1,
                       total_runtime = 100)
 
 ## ----visualise----------------------------------------------------------------
@@ -66,6 +69,7 @@ selected_pop <- simulate_admixture(
                                                markers = chosen_markers),
                       pop_size = 1000,
                       total_runtime = 100,
+                      num_threads = 1,
                       select_matrix = selection_matrix)
 plot_over_time(selected_pop$frequencies, focal_location = 50)
 
@@ -77,12 +81,14 @@ migr_pop <-
                                                        fake_input_data2)),
         migration = migration_settings(migration_rate = 0.01,
                                        population_size = c(100, 100)),
+        num_threads = 1,
         total_runtime = 100)
 
 ## ----from_simulation----------------------------------------------------------
 simulated_pop <- simulate_admixture(
                       module = ancestry_module(), 
                       pop_size = 100,
+                      num_threads = 1,
                       total_runtime = 100)
 prepared_pop  <-
   simulation_data_to_genomeadmixr_data(simulation_data = simulated_pop,
@@ -91,6 +97,7 @@ prepared_pop  <-
 simulated_pop2 <- simulate_admixture(
                         module = sequence_module(molecular_data = prepared_pop),
                         pop_size = 100,
+                        num_threads = 1,
                         total_runtime = 100)
 
 ## ----results = 'asis'---------------------------------------------------------
@@ -127,6 +134,7 @@ writeLines(print_mat(matrix(c(diag_entry, kappa, 1 / 4, 1 / 4,
                                                mutation_rate = mutation_rate,
                                                substitution_matrix = rate_matrix),
                       pop_size = 1000,
+                      num_threads = 1,
                       total_runtime = 100)
   
   freqs <- calculate_allele_frequencies(simulated_pop)

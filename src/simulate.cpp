@@ -43,50 +43,15 @@ void update_pop(const std::vector<Fish>& Pop,
     stop("new_generation wrong size");
   }
 
-
-  int num_seeds = num_threads * 10; // tbb might re-start threads due to the load-balancer
-  if (num_threads == -1) {
-    num_seeds = 200;
-  }
-  std::vector< int > seed_values(num_seeds);
-
-  {
-    rnd_t rndgen;
-    for (int i = 0; i < num_seeds; ++i) {
-      seed_values[i] = rndgen.random_number(INT_MAX); // large value
-    }
-  }
-
-  if (num_threads == 1) {
-    rnd_t rndgen2;
-    for (unsigned i = 0; i < pop_size; ++i) {
-      int index1 = 0;
-      int index2 = 0;
-      if (use_selection) {
-        index1 = draw_prop_fitness(fitness, maxFitness, rndgen2);
-        index2 = draw_prop_fitness(fitness, maxFitness, rndgen2);
-        while(index2 == index1) index2 = draw_prop_fitness(fitness, maxFitness, rndgen2);
-      } else {
-        index1 = rndgen2.random_number( pop_size );
-        index2 = rndgen2.random_number( pop_size );
-        while(index2 == index1) index2 = rndgen2.random_number( pop_size );
-      }
-
-      new_generation[i] = mate(Pop[index1],
-                               Pop[index2],
-                                  morgan, rndgen2);
-    }
-  } else {
-
-    set_num_threads();
-
+  set_num_threads();
+  tbb::task_arena(num_threads).execute([&] {
     tbb::parallel_for(
       tbb::blocked_range<unsigned>(0, pop_size),
       [&](const tbb::blocked_range<unsigned>& r) {
 
-      size_t local_seed = std::hash<std::thread::id>{}(std::this_thread::get_id());
-      size_t local_time = static_cast<unsigned int>( time(NULL) );
-      thread_local rnd_t rndgen2(local_seed + local_time);
+        size_t local_seed = std::hash<std::thread::id>{}(std::this_thread::get_id());
+        size_t local_time = static_cast<unsigned int>( time(NULL) );
+        thread_local rnd_t rndgen2(local_seed + local_time);
 
         for (unsigned i = r.begin(); i < r.end(); ++i) {
           int index1 = 0;
@@ -106,7 +71,8 @@ void update_pop(const std::vector<Fish>& Pop,
                                       morgan, rndgen2);
         }
       });
-  }
+  });
+
   return;
 }
 
@@ -324,7 +290,7 @@ List simulate_cpp(Rcpp::NumericVector input_population,
   } catch(std::exception &ex) {
     forward_exception_to_r(ex);
   } catch(...) {
-    ::Rf_error("c++ exception (unknown reason)");
+    Rcpp::stop("c++ exception (unknown reason)");
   }
   return NA_REAL;
 }

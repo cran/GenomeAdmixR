@@ -1,7 +1,7 @@
 Type: Package
 Package: GenomeAdmixR
 Title: Simulate Admixture of Genomes
-Version: 2.1.12
+Version: 2.1.13.2
 Authors@R: 
     c(person(given = "Thijs",
              family = "Janzen",
@@ -28,13 +28,14 @@ Suggests: dplyr, junctions, knitr, magrittr, rmarkdown, testit,
 LinkingTo: Rcpp, RcppArmadillo, RcppParallel
 VignetteBuilder: knitr
 Encoding: UTF-8
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends: R (>= 2.10)
+SystemRequirements: C++17
 NeedsCompilation: yes
-Packaged: 2025-06-20 09:51:42 UTC; thijsjanzen
+Packaged: 2026-05-13 15:19:33 UTC; thijsjanzen
 Author: Thijs Janzen [aut, cre],
   Fernando Diaz G. [ctb],
   Richèl J.C. Bilderbeek [ctb]
 Maintainer: Thijs Janzen <thijsjanzen@gmail.com>
 Repository: CRAN
-Date/Publication: 2025-06-20 10:40:02 UTC
+Date/Publication: 2026-05-14 14:10:28 UTC

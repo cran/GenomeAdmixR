@@ -35,7 +35,7 @@ simulate_ancestry <- function(input_population = NA,
                                track_junctions = FALSE,
                                multiplicative_selection = TRUE) {
 
-  RcppParallel::setThreadOptions(num_threads)
+  set_num_threads(num_threads)
 
   input_population <- check_input_pop(input_population)
 
@@ -43,6 +43,7 @@ simulate_ancestry <- function(input_population = NA,
     if (inherits(input_population, "population")) {
       pop_size <- length(input_population)
     } else {
+      reset_num_threads()
       stop("pop_size is undefined, need an input population")
     }
   }
@@ -102,6 +103,6 @@ simulate_ancestry <- function(input_population = NA,
                                          track_junctions)
 
   class(output) <- "genomadmixr_simulation"
-
+  reset_num_threads()
   return(output)
 }

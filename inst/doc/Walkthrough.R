@@ -1,6 +1,7 @@
 ## ----setup, include=FALSE-----------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.width = 6)
+RcppParallel::setThreadOptions( getOption("Ncpus",  RcppParallel::defaultNumThreads()) )
 
 ## -----------------------------------------------------------------------------
 library(GenomeAdmixR)
@@ -12,8 +13,8 @@ wildpop <-  simulate_admixture(
                     module = ancestry_module(number_of_founders = 4,
                                              morgan = 1),
                     pop_size = 100,
-                    total_runtime = 1000)
-
+                    total_runtime = 1000,
+                    num_threads = 1)
 
 ## -----------------------------------------------------------------------------
 wildpop
@@ -27,7 +28,8 @@ isofemale <- create_iso_female(
                                            morgan = 1),
                   n = 1,
                   inbreeding_pop_size = 1000,
-                   run_time = 200)
+                  run_time = 200,
+                  num_threads = 1)
 
 ## -----------------------------------------------------------------------------
 plot(isofemale[[1]])
@@ -37,6 +39,7 @@ wildpop <-  simulate_admixture(
                   module = ancestry_module(number_of_founders = 4,
                                            morgan = 1),
                   pop_size = 100,
+                  num_threads = 1,
                   total_runtime = 100)
 
 isofemale <- create_iso_female(
@@ -44,6 +47,7 @@ isofemale <- create_iso_female(
                                            morgan = 1),
                   n = 1,
                   inbreeding_pop_size = 100,
+                  num_threads = 1,
                   run_time = 10000)
 plot(wildpop$population[[1]])
 plot(isofemale[[1]])
@@ -61,7 +65,8 @@ both_populations <-
                                  list(c(rep(1, 20), rep(0, 20)),
                                       c(rep(0, 20), rep(1, 20)))
                       ),
-    total_runtime = 1000)
+    total_runtime = 1000,
+    num_threads = 1)
 
 population_1 <- both_populations$population_1
 
@@ -73,7 +78,8 @@ isofemales <- create_iso_female(
                                            morgan = 1),
                   n = 2,
                   inbreeding_pop_size = 100,
-                  run_time = 10000)
+                  run_time = 10000,
+                  num_threads = 1)
 
 plot_chromosome(isofemales[[1]]$chromosome1, 0, 1)
 plot_chromosome(isofemales[[2]]$chromosome1, 0, 1)
@@ -84,7 +90,8 @@ mixed_population <-
         module = ancestry_module(input_population = list(isofemales[[1]],
                                                          isofemales[[2]]),
                                  morgan = 1),
-        pop_size = 100, 
+        pop_size = 100,
+        num_threads = 1,
         total_runtime = 100)
 
 ## ----plot mixed_population----------------------------------------------------
@@ -120,6 +127,7 @@ no_ld_pop <- simulate_admixture(
                   module = ancestry_module(number_of_founders = 4,
                                            morgan = 1),
                   pop_size = 100,
+                  num_threads = 1,
                   total_runtime = 1000)
 
 ld_results <- calculate_ld(no_ld_pop,
@@ -138,6 +146,7 @@ strong_ld_pop <- simulate_admixture(
                   module = ancestry_module(number_of_founders = 4,
                                            morgan = 1),
                   pop_size = 100,
+                  num_threads = 1,
                   total_runtime = 10)
 
 ld_results <- calculate_ld(strong_ld_pop,
@@ -166,6 +175,7 @@ selected_pop <- simulate_admixture(
                                              markers = markers),
                     pop_size = 1000,  
                     total_runtime = 100,
+                    num_threads = 1,
                     select_matrix = selection_matrix)
 
 plot_over_time(selected_pop$frequencies, markers)
@@ -182,6 +192,7 @@ selected_pop <- simulate_admixture(
                                              markers = markers),
                     pop_size = 1000,  
                     total_runtime = 300,
+                    num_threads = 1,
                     select_matrix = selection_matrix)
 
 plot_over_time(selected_pop$frequencies, markers)
